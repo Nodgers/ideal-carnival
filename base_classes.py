@@ -10,7 +10,7 @@ class PowerUp(pygame.sprite.Sprite):
         self.image = pygame.image.load("images/items/PowerUp.png")
         self.rect = self.image.get_rect()
         self.rect.center = spawn_pos
-
+        self.score_value = 100
         self.speed = 1
         self.main_game.power_up_group.add(self)
         self.main_game.all_sprites_group.add(self)
@@ -19,6 +19,9 @@ class PowerUp(pygame.sprite.Sprite):
         player = pygame.sprite.spritecollideany(self, self.main_game.player_group)
         if player:
             self.main_game.player1.power_up()
+            self.main_game.score += (self.score_value + self.main_game.player1.level)
+            score_drop = ScoreDrop(self)
+            self.main_game.score_drops.append(score_drop)
             self.kill()
 
     def move(self):
@@ -76,7 +79,8 @@ class Enemy(pygame.sprite.Sprite):
 
         self.health = 1
         self.speed = 5
-        self.chance_to_drop = 0  # TODO: I *think* I'm going to connect this to the stage and not the enemy
+        self.chance_to_drop = 0
+        self.dice_sides = 20
         self.getting_hit_by = []
         self.score_value = 1
 
@@ -98,11 +102,11 @@ class Enemy(pygame.sprite.Sprite):
 
     def die(self):
         # Roll dice for drop
-        pick = random.randint(1, 20)
+        pick = random.randint(1, self.dice_sides)
 
         # Roll another dice for every chance to drop
         for chance in range(self.chance_to_drop):
-            if random.randint(1, 20) == pick:
+            if random.randint(1, self.dice_sides) == pick:
                 # If you managed to pick the right number, spawn a power up at the enemy's location
                 PowerUp(self.main_game, self.rect.center)
 
@@ -158,7 +162,7 @@ class Player(pygame.sprite.Sprite):
         self.image = pygame.image.load("images/players/Player.png")
         self.rect = self.image.get_rect()
         self.rect.center = (160, 520)
-        self.health = 1
+        self.health = 3
         self.level = 0
         self.shot_power = 1
         self.shot_frequency = 500
@@ -215,6 +219,10 @@ class Player(pygame.sprite.Sprite):
 
     def take_damage(self, amount):
         self.health -= amount
+
+        # If you get hit, lose 2 levels of power
+        if self.level >= 2:
+            self.level -= 2
 
     def update(self):
         # Check to see if the player is getting hit by any enemies

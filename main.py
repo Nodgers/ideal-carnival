@@ -7,6 +7,7 @@ from pygame.locals import *
 # Initializing
 from base_classes import *
 from enemies import *
+from waves import ALL_WAVES
 
 # Creating colors
 BLUE = (0, 0, 255)
@@ -49,32 +50,35 @@ class Background:
 
 class MainGame:
     def __init__(self):
-        self.next_stage = None
-        self.score_drops = None
-        self.score = 0
-        self.game_over = None
-        self.font_small = None
-        self.font = None
-        pygame.init()
 
+        pygame.init()
         self.all_sprites_group = None
         self.background = None
+        self.current_wave = None
         self.display_surface = None
         self.enemy_group = None
         self.enemy_types = None
+        self.font = None
+        self.font_small = None
         self.fps = None
         self.framePerSec = None
+        self.game_over = None
+        self.next_stage = None
         self.player1 = None
         self.player_group = None
         self.power_up_group = None
         self.projectile_group = None
+        self.score_drops = None
         self.screen_height = None
         self.screen_width = None
         self.spawn_enemy = None
         self.spawn_power_up = None
+
         self.enemy_spawn_frequency = 1000
         self.next_stage_frequency = 30000  # 30 seconds
-        self.stage = 1
+        self.score = 0
+        self.stage = 0
+
         self.setup_display()
         self.create_groups()
         self.setup_game()
@@ -117,17 +121,9 @@ class MainGame:
         # Setting up Sprites
         self.player1 = Player(self)
         self.all_sprites_group.add(self.player1)
-
-        # Spawn Enemy event every n seconds
         self.spawn_enemy = pygame.USEREVENT + 1
-        pygame.time.set_timer(self.spawn_enemy, self.enemy_spawn_frequency)
 
-        # Go up a stage every n seconds
-        self.next_stage = pygame.USEREVENT + 2
-        pygame.time.set_timer(self.next_stage, self.next_stage_frequency)
-
-        # TODO: Think about how you want the makeup of these to change with each stage
-        self.enemy_types = [EasyEnemy, MediumEnemy, HardEnemy]
+        self.go_to_next_stage()
 
     def end_game(self):
         # Everything that happens when the player dies
@@ -143,7 +139,16 @@ class MainGame:
         sys.exit()
 
     def go_to_next_stage(self):
-        # TODO: Work out how you want the next stage to be - authored or procedural?
+        if self.stage > len(ALL_WAVES) - 1:
+            print("Ran out of stages! Game over until you get off your arse and make more")
+            self.end_game()
+
+        self.current_wave = ALL_WAVES[self.stage]
+        print(f"Start Wave No. {self.current_wave.wave_no} - {self.current_wave.wave_text}")
+
+        # Spawn Enemy event every n seconds
+        pygame.time.set_timer(self.spawn_enemy, self.current_wave.spawn_frequency)
+
         self.stage += 1
 
     def start(self):
@@ -152,12 +157,16 @@ class MainGame:
             # Cycles through all events occurring
             for event in pygame.event.get():
                 if event.type == self.spawn_enemy:  # TODO: Replace with match case when Python 3.10 lands
-                    # Spawn random enemy
-                    random.choice(self.enemy_types)(self)
-
-                if event.type == self.next_stage:
-                    # Trigger a load of changes for the next stage
-                    self.go_to_next_stage()
+                    # If you've spawned every enemy in the wave, move onto the next
+                    current_wave_length = len(self.current_wave.enemies) - 1
+                    if self.current_wave.current_enemy > current_wave_length:
+                        self.go_to_next_stage()
+                    else:
+                        # Spawn the next enemy
+                        new_enemy = self.current_wave.enemies[self.current_wave.current_enemy](self)
+                        new_enemy.dice_sides = current_wave_length
+                        new_enemy.speed *= self.current_wave.enemy_speed_multiplier
+                        self.current_wave.current_enemy += 1
 
                 if event.type == QUIT:
                     pygame.quit()
