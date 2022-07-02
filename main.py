@@ -1,12 +1,11 @@
 # Imports
-import random
 import sys
 import time
 
 from pygame.locals import *
 
 # Initializing
-from baseClasses import *
+from base_classes import *
 from enemies import *
 
 # Creating colors
@@ -17,23 +16,51 @@ BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 
 
+class Background:
+    def __init__(self, main_game):
+        self.bg_image = pygame.image.load('images/backgrounds/Background.png')
+        self.rect_bg_img = self.bg_image.get_rect()
+        self.main_game = main_game
+        self.bg_y1 = 0
+        self.bg_x1 = 0
+
+        self.bg_y2 = -self.rect_bg_img.height
+        self.bg_x2 = 0
+
+        self.moving_up_speed = 1
+
+    def update(self):
+        self.bg_y1 += self.moving_up_speed
+        self.bg_y2 += self.moving_up_speed
+        if self.bg_y1 >= self.rect_bg_img.height:
+            self.bg_y1 = -self.rect_bg_img.height
+        if self.bg_y2 >= self.rect_bg_img.height:
+            self.bg_y2 = -self.rect_bg_img.height
+
+    def render(self):
+        self.main_game.display_surface.blit(self.bg_image, (self.bg_x1, self.bg_y1))
+        self.main_game.display_surface.blit(self.bg_image, (self.bg_x2, self.bg_y2))
+
+
 class MainGame:
     def __init__(self):
         pygame.init()
 
         self.all_sprites_group = None
+        self.background = None
         self.display_surface = None
         self.enemy_group = None
         self.enemy_types = None
-        self.spawn_power_up = None
-        self.power_up_group = None
         self.fps = None
         self.framePerSec = None
         self.player1 = None
+        self.player_group = None
+        self.power_up_group = None
         self.projectile_group = None
         self.screen_height = None
         self.screen_width = None
         self.spawn_enemy = None
+        self.spawn_power_up = None
 
         self.setup_display()
         self.create_groups()
@@ -64,6 +91,9 @@ class MainGame:
         self.all_sprites_group = pygame.sprite.Group()
 
     def setup_game(self):
+        # Create background
+        self.background = Background(self)
+
         # Setting up Sprites
         self.player1 = Player(self)
         self.all_sprites_group.add(self.player1)
@@ -75,7 +105,7 @@ class MainGame:
         self.enemy_types = [EasyEnemy, MediumEnemy, HardEnemy]
 
     def end_game(self):
-        print("Game Over")
+        # Everything that happens when the player dies
         self.display_surface.fill(RED)
         pygame.display.update()
         for entity in self.all_sprites_group:
@@ -89,8 +119,7 @@ class MainGame:
         while True:
             # Cycles through all events occuring
             for event in pygame.event.get():
-                # TODO: Replace with match case when Python 3.10 lands
-                if event.type == self.spawn_enemy:
+                if event.type == self.spawn_enemy:  # TODO: Replace with match case when Python 3.10 lands
                     # Spawn random enemy
                     random.choice(self.enemy_types)(self)
 
@@ -98,8 +127,9 @@ class MainGame:
                     pygame.quit()
                     sys.exit()
 
-            # Draw the surface
-            self.display_surface.fill(BLACK)
+            # Draw the background
+            self.background.update()
+            self.background.render()
 
             # Moves and Re-draws all Sprites
             for entity in self.all_sprites_group:
