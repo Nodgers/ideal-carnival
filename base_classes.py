@@ -28,6 +28,25 @@ class PowerUp(pygame.sprite.Sprite):
             self.kill()
 
 
+class ScoreDrop:
+    def __init__(self, parent):
+        self.font_render = None
+        self.parent = parent
+        self.position = list(parent.rect.center)
+        self.creation_time = pygame.time.get_ticks()
+        self.age = 0
+        self.lifespan = 1000
+        self.font = pygame.font.SysFont("Impact", 24)
+
+    def update(self):
+        self.position[1] += self.parent.speed
+        self.age = pygame.time.get_ticks() - self.creation_time
+
+
+    def render(self):
+        self.font_render = self.font.render(f"+{self.parent.score_value}", True, (255, 255, 255))
+
+
 class Enemy(pygame.sprite.Sprite):
     """
     - Enemy -
@@ -44,8 +63,9 @@ class Enemy(pygame.sprite.Sprite):
 
         self.health = 1
         self.speed = 5
-        self.chance_to_drop = 0 # 0 in 50 times chance to drop powerup
+        self.chance_to_drop = 0  # 0 in 50 times chance to drop powerup
         self.getting_hit_by = []
+        self.score_value = 1
 
         self.main_game.enemy_group.add(self)
         self.main_game.all_sprites_group.add(self)
@@ -72,6 +92,13 @@ class Enemy(pygame.sprite.Sprite):
             if random.randint(1, 20) == pick:
                 # If you managed to pick the right number, spawn a power up at the enemy's location
                 PowerUp(self.main_game, self.rect.center)
+
+        # Add to game score
+        self.main_game.score += self.score_value
+
+        # Drop score
+        score_drop = ScoreDrop(self)
+        self.main_game.score_drops.append(score_drop)
 
         self.kill()
 
@@ -118,7 +145,7 @@ class Player(pygame.sprite.Sprite):
         self.image = pygame.image.load("images/players/Player.png")
         self.rect = self.image.get_rect()
         self.rect.center = (160, 520)
-        self.health = 3
+        self.health = 1
         self.power = 1
         self.fire_delta = 100
         self.main_game.player_group.add(self)

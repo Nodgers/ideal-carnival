@@ -21,6 +21,8 @@ class Background:
         self.bg_image = pygame.image.load('images/backgrounds/Background.png')
         self.rect_bg_img = self.bg_image.get_rect()
         self.main_game = main_game
+
+        # Position an image, Y2 on top of Y1
         self.bg_y1 = 0
         self.bg_x1 = 0
 
@@ -30,8 +32,11 @@ class Background:
         self.moving_up_speed = 1
 
     def update(self):
+        # Scroll the images both down
         self.bg_y1 += self.moving_up_speed
         self.bg_y2 += self.moving_up_speed
+
+        # Once the bottom image is fully off-screen, put it back on top
         if self.bg_y1 >= self.rect_bg_img.height:
             self.bg_y1 = -self.rect_bg_img.height
         if self.bg_y2 >= self.rect_bg_img.height:
@@ -44,6 +49,11 @@ class Background:
 
 class MainGame:
     def __init__(self):
+        self.score_drops = None
+        self.score = 0
+        self.game_over = None
+        self.font_small = None
+        self.font = None
         pygame.init()
 
         self.all_sprites_group = None
@@ -82,6 +92,13 @@ class MainGame:
         # Name the window
         pygame.display.set_caption("Game")
 
+        # Setting up Fonts
+        self.font = pygame.font.SysFont("Impact", 60)
+        self.font_small = pygame.font.SysFont("Impact", 20)
+
+        # Scores to render
+        self.score_drops = []
+
     def create_groups(self):
         # Creating Sprites Groups
         self.enemy_group = pygame.sprite.Group()
@@ -107,6 +124,9 @@ class MainGame:
     def end_game(self):
         # Everything that happens when the player dies
         self.display_surface.fill(RED)
+        game_over = self.font.render("GAME OVER", True, BLACK)
+        self.display_surface.blit(game_over, (50, self.screen_height / 2))
+
         pygame.display.update()
         for entity in self.all_sprites_group:
             entity.kill()
@@ -131,11 +151,29 @@ class MainGame:
             self.background.update()
             self.background.render()
 
+            # DISPLAYSURF.blit(background, (0,0))
+            scores = self.font_small.render(str(self.score), True, WHITE)
+            self.display_surface.blit(scores, (10, 10))
+
             # Moves and Re-draws all Sprites
             for entity in self.all_sprites_group:
                 self.display_surface.blit(entity.image, entity.rect)
                 entity.move()
                 entity.update()
+
+            # Render all the scores
+            dead_score_drops = []
+            for score_drop in self.score_drops:
+                score_drop.update()
+                if score_drop.age > score_drop.lifespan:
+                    dead_score_drops.append(score_drop)
+                    continue
+                score_drop.render()
+                self.display_surface.blit(score_drop.font_render, score_drop.position)
+
+            # Clean up any old score drops so they don't keep rendering
+            for i in reversed(dead_score_drops):
+                del(i)
 
             pygame.display.update()
             self.framePerSec.tick(self.fps)
