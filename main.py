@@ -151,7 +151,7 @@ class MainGame:
             self.background.update()
             self.background.render()
 
-            # DISPLAYSURF.blit(background, (0,0))
+            # Draw the scores
             scores = self.font_small.render(str(self.score), True, WHITE)
             self.display_surface.blit(scores, (10, 10))
 
@@ -169,7 +169,6 @@ class MainGame:
                     dead_score_drops.append(score_drop)
                     continue
                 score_drop.render()
-                self.display_surface.blit(score_drop.font_render, score_drop.position)
 
             # Clean up any old score drops so they don't keep rendering
             for i in reversed(dead_score_drops):

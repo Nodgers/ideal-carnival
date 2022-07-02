@@ -32,19 +32,31 @@ class ScoreDrop:
     def __init__(self, parent):
         self.font_render = None
         self.parent = parent
-        self.position = list(parent.rect.center)
+        self.position = list(self.parent.rect.center)
         self.creation_time = pygame.time.get_ticks()
         self.age = 0
         self.lifespan = 1000
-        self.font = pygame.font.SysFont("Impact", 24)
+
+        font_size = 12
+        if self.parent.score_value >= 10:
+            font_size = 18
+        if self.parent.score_value >= 50:
+            font_size = 24
+        if self.parent.score_value >= 100:
+            font_size = 36
+
+        self.font = pygame.font.SysFont("Impact", font_size)
 
     def update(self):
-        self.position[1] += self.parent.speed
+        self.position[1] += 3
         self.age = pygame.time.get_ticks() - self.creation_time
-
 
     def render(self):
         self.font_render = self.font.render(f"+{self.parent.score_value}", True, (255, 255, 255))
+        if self.age > 0:
+            alpha = (1 - (self.age / self.lifespan)) * 255
+            self.font_render.set_alpha(alpha)
+        self.parent.main_game.display_surface.blit(self.font_render, self.position)
 
 
 class Enemy(pygame.sprite.Sprite):
@@ -158,6 +170,9 @@ class Player(pygame.sprite.Sprite):
         self.main_game.all_sprites_group.add(new_projectile)
 
     def fire(self):
+        # Play a pew pew pew sound
+        pygame.mixer.Sound('audio/pew.wav').play()
+
         # Fire a single bullet
         self.make_projectile()
 
