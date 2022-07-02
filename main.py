@@ -49,6 +49,7 @@ class Background:
 
 class MainGame:
     def __init__(self):
+        self.next_stage = None
         self.score_drops = None
         self.score = 0
         self.game_over = None
@@ -71,7 +72,9 @@ class MainGame:
         self.screen_width = None
         self.spawn_enemy = None
         self.spawn_power_up = None
-
+        self.enemy_spawn_frequency = 1000
+        self.next_stage_frequency = 30000  # 30 seconds
+        self.stage = 1
         self.setup_display()
         self.create_groups()
         self.setup_game()
@@ -115,10 +118,15 @@ class MainGame:
         self.player1 = Player(self)
         self.all_sprites_group.add(self.player1)
 
-        # Spawn Enemy event every 1000ms
+        # Spawn Enemy event every n seconds
         self.spawn_enemy = pygame.USEREVENT + 1
-        pygame.time.set_timer(self.spawn_enemy, 1000)
+        pygame.time.set_timer(self.spawn_enemy, self.enemy_spawn_frequency)
 
+        # Go up a stage every n seconds
+        self.next_stage = pygame.USEREVENT + 2
+        pygame.time.set_timer(self.next_stage, self.next_stage_frequency)
+
+        # TODO: Think about how you want the makeup of these to change with each stage
         self.enemy_types = [EasyEnemy, MediumEnemy, HardEnemy]
 
     def end_game(self):
@@ -134,14 +142,22 @@ class MainGame:
         pygame.quit()
         sys.exit()
 
+    def go_to_next_stage(self):
+        # TODO: Work out how you want the next stage to be - authored or procedural?
+        self.stage += 1
+
     def start(self):
         # Game Loop
         while True:
-            # Cycles through all events occuring
+            # Cycles through all events occurring
             for event in pygame.event.get():
                 if event.type == self.spawn_enemy:  # TODO: Replace with match case when Python 3.10 lands
                     # Spawn random enemy
                     random.choice(self.enemy_types)(self)
+
+                if event.type == self.next_stage:
+                    # Trigger a load of changes for the next stage
+                    self.go_to_next_stage()
 
                 if event.type == QUIT:
                     pygame.quit()
@@ -170,9 +186,9 @@ class MainGame:
                     continue
                 score_drop.render()
 
-            # Clean up any old score drops so they don't keep rendering
+            # Clean up any old score drops, so they don't keep rendering
             for i in reversed(dead_score_drops):
-                del(i)
+                del (i)
 
             pygame.display.update()
             self.framePerSec.tick(self.fps)

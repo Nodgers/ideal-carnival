@@ -18,16 +18,17 @@ class PowerUp(pygame.sprite.Sprite):
     def update(self):
         player = pygame.sprite.spritecollideany(self, self.main_game.player_group)
         if player:
-            self.main_game.player1.power += 1
+            self.main_game.player1.power_up()
             self.kill()
 
     def move(self):
         self.rect.move_ip(0, self.speed)
         if self.rect.bottom > self.main_game.screen_height:
-            # If the enemy reaches the bottom without getting killed, despawn it
+            # If the powerup reaches the bottom without getting killed, despawn it
             self.kill()
 
 
+# TODO: Turn this into a generic class for dropping text onto the screen
 class ScoreDrop:
     def __init__(self, parent):
         self.font_render = None
@@ -75,7 +76,7 @@ class Enemy(pygame.sprite.Sprite):
 
         self.health = 1
         self.speed = 5
-        self.chance_to_drop = 0  # 0 in 50 times chance to drop powerup
+        self.chance_to_drop = 0  # TODO: I *think* I'm going to connect this to the stage and not the enemy
         self.getting_hit_by = []
         self.score_value = 1
 
@@ -127,13 +128,13 @@ class PlayerProjectile(pygame.sprite.Sprite):
     Base class for all player projectiles
     """
 
-    def __init__(self, main_game, offset):
+    def __init__(self, main_game, offset_x, offset_y):
         super().__init__()
         self.main_game = main_game
         self.image = pygame.image.load("images/weapons/Projectile.png")
         self.rect = self.image.get_rect()
         self.rect.center = self.main_game.player1.rect.center
-        self.rect.move_ip(offset, 0)
+        self.rect.move_ip(offset_x, offset_y)
         self.speed = 10
         self.main_game.projectile_group.add(self)
         self.main_game.all_sprites_group.add(self)
@@ -158,33 +159,57 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = (160, 520)
         self.health = 1
-        self.power = 1
-        self.fire_delta = 100
+        self.level = 0
+        self.shot_power = 1
+        self.shot_frequency = 500
         self.main_game.player_group.add(self)
         self.main_game.all_sprites_group.add(self)
         self.fired_time = 0
 
-    def make_projectile(self, offset=0):
-        new_projectile = PlayerProjectile(self.main_game, offset)
+    def make_projectile(self, offset_x=0, offset_y=0):
+        new_projectile = PlayerProjectile(self.main_game, offset_x, offset_y)
         self.main_game.projectile_group.add(new_projectile)
         self.main_game.all_sprites_group.add(new_projectile)
 
+    def power_up(self):
+        if self.level == 0:
+            self.shot_frequency = 400
+        if self.level == 1:
+            self.shot_frequency = 300
+        if self.level == 2:
+            self.shot_frequency = 200
+        if self.level == 3:
+            self.shot_frequency = 100
+        if self.level == 4:
+            self.shot_frequency = 200
+            self.shot_power = 2
+        if self.level == 5:
+            self.shot_frequency = 100
+        if self.level == 6:
+            self.shot_frequency = 100
+            self.shot_power = 3
+        if self.level == 7:
+            self.shot_frequency = 60
+
+        self.level += 1
+        print(f"Power Up! Level {self.level}")
+
     def fire(self):
         # Play a pew pew pew sound
-        pygame.mixer.Sound('audio/pew.wav').play()
+        # pygame.mixer.Sound('audio/pew.wav').play()
 
         # Fire a single bullet
-        self.make_projectile()
+        self.make_projectile(0, -20)
 
         # Upgrade 1: Add two extra bullets
-        if self.power > 1:
-            self.make_projectile(-10)
-            self.make_projectile(10)
+        if self.shot_power > 1:
+            self.make_projectile(-10, -10)
+            self.make_projectile(10, -10)
 
         # Upgrade 2: Add a further two bullets
-        if self.power > 2:
-            self.make_projectile(-20)
-            self.make_projectile(20)
+        if self.shot_power > 2:
+            self.make_projectile(-20, 0)
+            self.make_projectile(20, 0)
 
         self.fired_time = pygame.time.get_ticks()
 
@@ -209,7 +234,7 @@ class Player(pygame.sprite.Sprite):
         pressed_keys = pygame.key.get_pressed()
         if pressed_keys[pygame.K_SPACE]:
             fire_time_delta = pygame.time.get_ticks() - self.fired_time
-            if fire_time_delta > self.fire_delta:
+            if fire_time_delta > self.shot_frequency:
                 self.fire()
 
     def die(self):
