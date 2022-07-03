@@ -26,7 +26,7 @@ class PowerUp(pygame.sprite.Sprite):
 
     def move(self):
         self.rect.move_ip(0, self.speed)
-        if self.rect.bottom > self.main_game.screen_height:
+        if self.rect.top > self.main_game.screen_height:
             # If the powerup reaches the bottom without getting killed, despawn it
             self.kill()
 
@@ -75,7 +75,8 @@ class Enemy(pygame.sprite.Sprite):
 
         self.image = pygame.image.load("images/enemies/Enemy.png")
         self.rect = self.image.get_rect()
-        self.rect.center = (random.randint(40, self.main_game.screen_width - 40), 0)
+        self.rect.center = (random.randint(self.main_game.screen_width / 10,
+                                           self.main_game.screen_width - self.main_game.screen_width / 10), 0)
 
         self.health = 1
         self.speed = 5
@@ -121,7 +122,7 @@ class Enemy(pygame.sprite.Sprite):
 
     def move(self):
         self.rect.move_ip(0, self.speed)
-        if self.rect.bottom > 600:
+        if self.rect.top > self.main_game.screen_height:
             # If the enemy reaches the bottom without getting killed, despawn it
             self.kill()
 
@@ -138,6 +139,8 @@ class PlayerProjectile(pygame.sprite.Sprite):
         self.image = pygame.image.load("images/weapons/Projectile.png")
         self.rect = self.image.get_rect()
         self.rect.center = self.main_game.player1.rect.center
+        self.offset_x = offset_x
+        self.offset_y = offset_y
         self.rect.move_ip(offset_x, offset_y)
         self.speed = 10
         self.main_game.projectile_group.add(self)
@@ -145,7 +148,7 @@ class PlayerProjectile(pygame.sprite.Sprite):
 
     def move(self):
         self.rect.move_ip(0, self.speed * -1)
-        if self.rect.top < 0:
+        if self.rect.bottom < 0:
             self.kill()
 
 
@@ -161,7 +164,7 @@ class Player(pygame.sprite.Sprite):
         self.getting_hit = False
         self.image = pygame.image.load("images/players/Player.png")
         self.rect = self.image.get_rect()
-        self.rect.center = (160, 520)
+        self.rect.center = (self.main_game.screen_width * 0.4, self.main_game.screen_height * 0.8)
         self.health = 3
         self.level = 0
         self.shot_power = 1

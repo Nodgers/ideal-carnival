@@ -50,8 +50,8 @@ class Background:
 
 class MainGame:
     def __init__(self):
-
         pygame.init()
+
         self.all_sprites_group = None
         self.background = None
         self.current_wave = None
@@ -178,7 +178,7 @@ class MainGame:
 
             # Draw the scores
             scores = self.font_small.render(str(self.score), True, WHITE)
-            self.display_surface.blit(scores, (10, 10))
+            self.display_surface.blit(scores, (self.screen_width / 40, self.screen_height / 60))
 
             # Moves and Re-draws all Sprites
             for entity in self.all_sprites_group:
