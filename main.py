@@ -1,10 +1,8 @@
-# Imports
 import sys
 import time
 
 from pygame.locals import *
 
-# Initializing
 from base_classes import *
 from enemies import *
 from waves import ALL_WAVES

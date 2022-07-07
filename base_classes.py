@@ -1,6 +1,8 @@
 import random
 import pygame
 
+SPRITE_POOL = {"PlayerProjectile": []}
+
 
 class PowerUp(pygame.sprite.Sprite):
     def __init__(self, main_game, spawn_pos):
@@ -141,15 +143,25 @@ class PlayerProjectile(pygame.sprite.Sprite):
         self.rect.center = self.main_game.player1.rect.center
         self.offset_x = offset_x
         self.offset_y = offset_y
-        self.rect.move_ip(offset_x, offset_y)
+        self.rect.move_ip(self.offset_x, self.offset_y)
         self.speed = 10
         self.main_game.projectile_group.add(self)
         self.main_game.all_sprites_group.add(self)
+        self.is_dead = False
+
+    def reset(self):
+        self.is_dead = False
+        self.rect = self.image.get_rect()
+        self.rect.center = self.main_game.player1.rect.center
+        self.rect.move_ip(self.offset_x, self.offset_y)
 
     def move(self):
+        if self.is_dead:
+            return
+
         self.rect.move_ip(0, self.speed * -1)
         if self.rect.bottom < 0:
-            self.kill()
+            self.is_dead = True
 
 
 class Player(pygame.sprite.Sprite):
@@ -166,17 +178,30 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = (self.main_game.screen_width * 0.4, self.main_game.screen_height * 0.8)
         self.health = 3
-        self.level = 0
-        self.shot_power = 1
+        self.level = 6
+        self.shot_power = 3
         self.shot_frequency = 500
         self.main_game.player_group.add(self)
         self.main_game.all_sprites_group.add(self)
         self.fired_time = 0
 
     def make_projectile(self, offset_x=0, offset_y=0):
+        global SPRITE_POOL
+        projectile_pool = SPRITE_POOL["PlayerProjectile"]
+        # If there's a projectile we can use in the pool, try to use that
+        if len(projectile_pool) > 0:
+            for p in projectile_pool:
+                # Look for one that's dead so you don't end up using a live one
+                if p.is_dead:
+                    new_projectile = p
+                    new_projectile.reset()
+                    return True
+
+        # If there's no
         new_projectile = PlayerProjectile(self.main_game, offset_x, offset_y)
         self.main_game.projectile_group.add(new_projectile)
         self.main_game.all_sprites_group.add(new_projectile)
+        projectile_pool.append(new_projectile)
 
     def power_up(self):
         if self.level == 0:
