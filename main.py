@@ -75,6 +75,7 @@ class MainGame:
         self.enemy_spawn_frequency = 1000
         self.next_stage_frequency = 30000  # 30 seconds
         self.score = 0
+        self.orbs = 0
         self.stage = 0
 
         self.setup_display()
@@ -175,8 +176,13 @@ class MainGame:
             self.background.render()
 
             # Draw the scores
-            scores = self.font_small.render(str(self.score), True, WHITE)
+            scores = self.font_small.render(f"Score: {self.score}", True, WHITE)
             self.display_surface.blit(scores, (self.screen_width / 40, self.screen_height / 60))
+
+            # Draw the Orbs
+            orbs = self.font_small.render(f"Orbs: {self.orbs}", True, WHITE)
+            self.display_surface.blit(orbs, (self.screen_width / 40, (self.screen_height / 60) + 40))
+
 
             # Moves and Re-draws all Sprites
             for entity in self.all_sprites_group:
@@ -184,7 +190,7 @@ class MainGame:
                 entity.move()
                 entity.update()
 
-            # Render all the scores
+            # Render all the score drops
             dead_score_drops = []
             for score_drop in self.score_drops:
                 score_drop.update()
@@ -195,7 +201,7 @@ class MainGame:
 
             # Clean up any old score drops, so they don't keep rendering
             for i in reversed(dead_score_drops):
-                del (i)
+                del i
 
             pygame.display.update()
             self.framePerSec.tick(self.fps)

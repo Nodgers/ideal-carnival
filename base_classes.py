@@ -1,7 +1,7 @@
 import random
 import pygame
 
-SPRITE_POOL = {"PlayerProjectile": []}
+SPRITE_POOL = {"PlayerProjectile": [], "Orbs": []}
 
 
 class PowerUp(pygame.sprite.Sprite):
@@ -17,6 +17,9 @@ class PowerUp(pygame.sprite.Sprite):
         self.main_game.power_up_group.add(self)
         self.main_game.all_sprites_group.add(self)
 
+    def die(self):
+        self.kill()
+
     def update(self):
         player = pygame.sprite.spritecollideany(self, self.main_game.player_group)
         if player:
@@ -24,13 +27,55 @@ class PowerUp(pygame.sprite.Sprite):
             self.main_game.score += (self.score_value + self.main_game.player1.level)
             score_drop = ScoreDrop(self)
             self.main_game.score_drops.append(score_drop)
-            self.kill()
+            self.die()
 
     def move(self):
         self.rect.move_ip(0, self.speed)
         if self.rect.top > self.main_game.screen_height:
             # If the powerup reaches the bottom without getting killed, despawn it
-            self.kill()
+            self.die()
+
+
+class Orb(pygame.sprite.Sprite):
+    def __init__(self, main_game, spawn_pos):
+        super().__init__()
+        self.main_game = main_game
+
+        self.image = pygame.image.load("images/items/Orb.png")
+        self.rect = self.image.get_rect()
+        self.rect.center = spawn_pos
+        self.score_value = 1
+        self.speed = 1
+        self.is_dead = False
+
+        self.main_game.power_up_group.add(self)
+        self.main_game.all_sprites_group.add(self)
+
+    def die(self):
+        self.is_dead = True
+        self.rect.center = (0, 0)
+
+    def reset(self, spawn_pos):
+        self.is_dead = False
+        self.rect.center = spawn_pos
+
+    def update(self):
+        player = pygame.sprite.spritecollideany(self, self.main_game.player_group)
+        if player:
+            self.main_game.score += self.score_value
+            self.main_game.orbs += 1
+            score_drop = ScoreDrop(self)
+            self.main_game.score_drops.append(score_drop)
+            self.die()
+
+    def move(self):
+        if self.is_dead:
+            return
+
+        self.rect.move_ip(0, self.speed)
+        if self.rect.top > self.main_game.screen_height:
+            # If the powerup reaches the bottom without getting killed, despawn it
+            self.die()
 
 
 # TODO: Turn this into a generic class for dropping text onto the screen
@@ -94,18 +139,25 @@ class Enemy(pygame.sprite.Sprite):
         colliding_entity = pygame.sprite.spritecollideany(self, self.main_game.projectile_group)
         if colliding_entity is not None:
             if colliding_entity not in self.getting_hit_by:
+                if colliding_entity.is_dead:
+                    # Can't get hit by a dead thing
+                    return
+
                 self.getting_hit_by.append(colliding_entity)
                 self.health -= 1
                 if self.health < 1:
                     self.die()
                 else:
-                    colliding_entity.kill()
+                    colliding_entity.die()
         else:
             self.getting_hit_by = []
 
     def die(self):
         # Roll dice for drop
         pick = random.randint(1, self.dice_sides)
+
+        # Drop an orb
+        self.drop_orb()
 
         # Roll another dice for every chance to drop
         for chance in range(self.chance_to_drop):
@@ -128,6 +180,22 @@ class Enemy(pygame.sprite.Sprite):
             # If the enemy reaches the bottom without getting killed, despawn it
             self.kill()
 
+    def drop_orb(self):
+        global SPRITE_POOL
+        orb_pool = SPRITE_POOL["Orbs"]
+        # If there's a projectile we can use in the pool, try to use that
+        if len(orb_pool) > 0:
+            for o in orb_pool:
+                # Look for one that's dead so you don't end up using a live one
+                if o.is_dead:
+                    o.reset(self.rect.center)
+                    return True
+
+        # If there's no
+        new_orb = Orb(self.main_game, self.rect.center)
+        self.main_game.all_sprites_group.add(new_orb)
+        orb_pool.append(new_orb)
+
 
 class PlayerProjectile(pygame.sprite.Sprite):
     """
@@ -135,7 +203,7 @@ class PlayerProjectile(pygame.sprite.Sprite):
     Base class for all player projectiles
     """
 
-    def __init__(self, main_game, offset_x, offset_y):
+    def __init__(self, main_game, offset_x=0, offset_y=0):
         super().__init__()
         self.main_game = main_game
         self.image = pygame.image.load("images/weapons/Projectile.png")
@@ -149,9 +217,11 @@ class PlayerProjectile(pygame.sprite.Sprite):
         self.main_game.all_sprites_group.add(self)
         self.is_dead = False
 
-    def reset(self):
+    def reset(self, offset_x=0, offset_y=0):
         self.is_dead = False
         self.rect = self.image.get_rect()
+        self.offset_x = offset_x
+        self.offset_y = offset_y
         self.rect.center = self.main_game.player1.rect.center
         self.rect.move_ip(self.offset_x, self.offset_y)
 
@@ -161,7 +231,11 @@ class PlayerProjectile(pygame.sprite.Sprite):
 
         self.rect.move_ip(0, self.speed * -1)
         if self.rect.bottom < 0:
-            self.is_dead = True
+            self.die()
+
+    def die(self):
+        self.is_dead = True
+        self.rect.center = (0, 0)
 
 
 class Player(pygame.sprite.Sprite):
@@ -178,8 +252,8 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = (self.main_game.screen_width * 0.4, self.main_game.screen_height * 0.8)
         self.health = 3
-        self.level = 6
-        self.shot_power = 3
+        self.level = 0
+        self.shot_power = 1
         self.shot_frequency = 500
         self.main_game.player_group.add(self)
         self.main_game.all_sprites_group.add(self)
@@ -193,12 +267,11 @@ class Player(pygame.sprite.Sprite):
             for p in projectile_pool:
                 # Look for one that's dead so you don't end up using a live one
                 if p.is_dead:
-                    new_projectile = p
-                    new_projectile.reset()
+                    p.reset(offset_x, offset_y)
                     return True
 
         # If there's no
-        new_projectile = PlayerProjectile(self.main_game, offset_x, offset_y)
+        new_projectile = PlayerProjectile(self.main_game, offset_x, )
         self.main_game.projectile_group.add(new_projectile)
         self.main_game.all_sprites_group.add(new_projectile)
         projectile_pool.append(new_projectile)
@@ -267,11 +340,9 @@ class Player(pygame.sprite.Sprite):
             self.getting_hit = False
 
         # Check for fire button
-        pressed_keys = pygame.key.get_pressed()
-        if pressed_keys[pygame.K_SPACE]:
-            fire_time_delta = pygame.time.get_ticks() - self.fired_time
-            if fire_time_delta > self.shot_frequency:
-                self.fire()
+        fire_time_delta = pygame.time.get_ticks() - self.fired_time
+        if fire_time_delta > self.shot_frequency:
+            self.fire()
 
     def die(self):
         self.kill()
