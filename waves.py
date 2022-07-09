@@ -43,7 +43,7 @@ Wave 2
 WAVE2 = Wave(2, "Getting Started")
 WAVE2.enemy_list = {EasyEnemy: 20, MediumEnemy: 3}
 WAVE2.chance_to_drop = 1
-WAVE2.spawn_frequency = 800
+WAVE2.spawn_frequency = 500
 WAVE2.enemy_speed_multiplier = 1.1
 WAVE2.build_enemy_list()
 ALL_WAVES.append(WAVE2)
@@ -52,7 +52,8 @@ ALL_WAVES.append(WAVE2)
 Wave 3
 """
 WAVE3 = Wave(3, "Let's Go")
-WAVE3.enemy_list = {EasyEnemy: 20, MediumEnemy: 10, HardEnemy: 5}
+WAVE3.enemy_list = {EasyEnemy: 30, MediumEnemy: 10, HardEnemy: 5}
+WAVE2.spawn_frequency = 400
 WAVE3.chance_to_drop = 1
 WAVE3.build_enemy_list()
 ALL_WAVES.append(WAVE3)
@@ -70,7 +71,7 @@ ALL_WAVES.append(WAVE4)
 Wave 5
 """
 WAVE5 = Wave(5, "BLAT")
-WAVE5.enemy_list = {EasyEnemy: 30}
+WAVE5.enemy_list = {EasyEnemy: 500}
 WAVE5.chance_to_drop = 1
 WAVE5.spawn_frequency = 20
 WAVE5.build_enemy_list()
@@ -80,7 +81,8 @@ ALL_WAVES.append(WAVE5)
 Wave 6
 """
 WAVE6 = Wave(4, "Oh well done")
-WAVE6.enemy_list = {MediumEnemy: 20, HardEnemy: 10}
+WAVE6.enemy_list = {EasyEnemy: 50, MediumEnemy: 20, HardEnemy: 10}
+WAVE2.spawn_frequency = 400
 WAVE6.chance_to_drop = 3
 WAVE6.build_enemy_list()
 ALL_WAVES.append(WAVE6)

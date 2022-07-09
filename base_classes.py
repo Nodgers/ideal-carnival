@@ -1,3 +1,4 @@
+import math
 import random
 import pygame
 
@@ -39,6 +40,7 @@ class PowerUp(pygame.sprite.Sprite):
 class Orb(pygame.sprite.Sprite):
     def __init__(self, main_game, spawn_pos):
         super().__init__()
+        self.angle = None
         self.main_game = main_game
 
         self.image = pygame.image.load("images/items/Orb.png")
@@ -53,13 +55,16 @@ class Orb(pygame.sprite.Sprite):
 
     def die(self):
         self.is_dead = True
-        self.rect.center = (0, 0)
+        self.rect.center = (0, self.main_game.screen_height * -1)
 
     def reset(self, spawn_pos):
         self.is_dead = False
         self.rect.center = spawn_pos
 
     def update(self):
+        if self.is_dead:
+            return
+
         player = pygame.sprite.spritecollideany(self, self.main_game.player_group)
         if player:
             self.main_game.score += self.score_value
@@ -72,7 +77,25 @@ class Orb(pygame.sprite.Sprite):
         if self.is_dead:
             return
 
-        self.rect.move_ip(0, self.speed)
+        # Measure the distance between the orb and the player
+        distance = math.dist(self.main_game.player1.rect.center, self.rect.center)
+        # If the orb is within range of the player
+        if distance < self.main_game.player1.attraction_distance:
+            playerX, playerY = self.main_game.player1.rect.center
+            orbX, orbY = self.rect.center
+            dx = playerX - orbX
+            dy = playerY - orbY
+
+            self.angle = 0.5 * math.pi + math.atan2(dy, dx)
+            self.speed = math.hypot(dx, dy) * 0.1
+
+            x = math.sin(self.angle) * self.speed
+            y = (math.cos(self.angle) * -1) * self.speed
+
+            self.rect.move_ip(x, y)
+        else:
+            self.rect.move_ip(0, self.speed)
+
         if self.rect.top > self.main_game.screen_height:
             # If the powerup reaches the bottom without getting killed, despawn it
             self.die()
@@ -235,7 +258,7 @@ class PlayerProjectile(pygame.sprite.Sprite):
 
     def die(self):
         self.is_dead = True
-        self.rect.center = (0, 0)
+        self.rect.center = (0, self.main_game.screen_height * -1)
 
 
 class Player(pygame.sprite.Sprite):
@@ -258,6 +281,7 @@ class Player(pygame.sprite.Sprite):
         self.main_game.player_group.add(self)
         self.main_game.all_sprites_group.add(self)
         self.fired_time = 0
+        self.attraction_distance = 150
 
     def make_projectile(self, offset_x=0, offset_y=0):
         global SPRITE_POOL
@@ -311,7 +335,7 @@ class Player(pygame.sprite.Sprite):
             self.make_projectile(-10, -10)
             self.make_projectile(10, -10)
 
-        # Upgrade 2: Add a further two bullets
+        # Upgrade 2: Add more two bullets
         if self.shot_power > 2:
             self.make_projectile(-20, 0)
             self.make_projectile(20, 0)
