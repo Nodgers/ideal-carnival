@@ -6,6 +6,7 @@ from pygame.locals import *
 from base_classes import *
 from enemies import *
 from waves import ALL_WAVES
+from weapons import PulseShot
 
 # Creating colors
 BLUE = (0, 0, 255)
@@ -99,8 +100,8 @@ class MainGame:
         pygame.display.set_caption("Game")
 
         # Setting up Fonts
-        self.font = pygame.font.SysFont("Impact", 60)
-        self.font_small = pygame.font.SysFont("Impact", 20)
+        self.font = pygame.font.SysFont("Menlo", 60)
+        self.font_small = pygame.font.SysFont("Menlo", 30)
 
         # Scores to render
         self.score_drops = []
@@ -119,6 +120,8 @@ class MainGame:
 
         # Setting up Sprites
         self.player1 = Player(self)
+        self.player1.add_weapon(PulseShot(self))
+
         self.all_sprites_group.add(self.player1)
         self.spawn_enemy = pygame.USEREVENT + 1
 
@@ -179,10 +182,9 @@ class MainGame:
             scores = self.font_small.render(f"Score: {self.score}", True, WHITE)
             self.display_surface.blit(scores, (self.screen_width / 40, self.screen_height / 60))
 
-            # Draw the Orbs
+            # Draw the orb count
             orbs = self.font_small.render(f"Orbs: {self.orbs}", True, WHITE)
             self.display_surface.blit(orbs, (self.screen_width / 40, (self.screen_height / 60) + 40))
-
 
             # Moves and Re-draws all Sprites
             for entity in self.all_sprites_group:
@@ -201,7 +203,7 @@ class MainGame:
 
             # Clean up any old score drops, so they don't keep rendering
             for i in reversed(dead_score_drops):
-                del i
+                del(i)
 
             pygame.display.update()
             self.framePerSec.tick(self.fps)
