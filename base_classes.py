@@ -36,6 +36,8 @@ class PowerUp(pygame.sprite.Sprite):
             self.die()
 
 
+
+
 class Orb(pygame.sprite.Sprite):
     def __init__(self, main_game, spawn_pos):
         super().__init__()
@@ -46,7 +48,9 @@ class Orb(pygame.sprite.Sprite):
         self.rect.center = spawn_pos
         self.score_value = 5
         self.speed = 1
+        self.velocity = pygame.math.Vector2(0, 0)
         self.is_dead = False
+        self.attracted = False
 
         self.main_game.power_up_group.add(self)
         self.main_game.all_sprites_group.add(self)
@@ -78,25 +82,21 @@ class Orb(pygame.sprite.Sprite):
         # Measure the distance between the orb and the player
         distance = math.dist(self.main_game.player1.rect.center, self.rect.center)
         # If the orb is within range of the player
-        if distance < self.main_game.player1.attraction_distance:
-            player_x, player_y = self.main_game.player1.rect.center
-            orb_x, orb_y = self.rect.center
-            dx = player_x - orb_x
-            dy = player_y - orb_y
+        if distance < self.main_game.player1.attraction_distance or self.attracted:
+            self.attracted = True
+            player_pos = pygame.math.Vector2(self.main_game.player1.rect.center)
+            orb_pos = pygame.math.Vector2(self.rect.center)
+            delta = player_pos - orb_pos
 
-            self.angle = 0.5 * math.pi + math.atan2(dy, dx)
-            self.speed = math.hypot(dx, dy) * 0.1
-
-            x = math.sin(self.angle) * self.speed
-            y = (math.cos(self.angle) * -1) * self.speed
-
-            self.rect.move_ip(x, y)
+            movement = delta * 0.1
+            self.rect.move_ip(movement.x, movement.y)
         else:
             self.rect.move_ip(0, self.speed)
 
-        if self.rect.top > self.main_game.screen_height:
-            # If the powerup reaches the bottom without getting killed, despawn it
-            self.die()
+        if not self.attracted:
+            if self.rect.top > self.main_game.screen_height:
+                # If the powerup reaches the bottom without getting killed, despawn it
+                self.die()
 
 
 # TODO: Turn this into a generic class for dropping text onto the screen
@@ -154,6 +154,7 @@ class Enemy(pygame.sprite.Sprite):
 
         self.main_game.enemy_group.add(self)
         self.main_game.all_sprites_group.add(self)
+        self.is_dead = False
 
     def update(self):
         colliding_projectile = pygame.sprite.spritecollideany(self, self.main_game.projectile_group)
@@ -180,6 +181,7 @@ class Enemy(pygame.sprite.Sprite):
             self.getting_hit_by = []
 
     def die(self):
+        self.is_dead = True
         # Roll dice for drop
         pick = random.randint(1, self.dice_sides)
 

@@ -6,7 +6,7 @@ from pygame.locals import *
 from base_classes import *
 from enemies import *
 from waves import ALL_WAVES
-from weapons import PulseShot
+from weapons import PulseShot, HomingMissileLauncher
 
 # Creating colors
 BLUE = (0, 0, 255)
@@ -121,6 +121,7 @@ class MainGame:
         # Setting up Sprites
         self.player1 = Player(self)
         self.player1.add_weapon(PulseShot(self))
+        self.player1.add_weapon(HomingMissileLauncher(self))
 
         self.all_sprites_group.add(self.player1)
         self.spawn_enemy = pygame.USEREVENT + 1
@@ -166,6 +167,7 @@ class MainGame:
                     else:
                         # Spawn the next enemy
                         new_enemy = self.current_wave.enemies[self.current_wave.current_enemy](self)
+                        self.enemy_group.add(new_enemy)
                         new_enemy.dice_sides = current_wave_length
                         new_enemy.speed *= self.current_wave.enemy_speed_multiplier
                         self.current_wave.current_enemy += 1
