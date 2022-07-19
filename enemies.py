@@ -31,3 +31,15 @@ class HardEnemy(Enemy):
         self.health = 5
         self.chance_to_drop = 1
         self.score_value = 100
+
+
+class Boss(Enemy):
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.image = pygame.image.load("images/enemies/Boss.png")
+        self.rect = self.image.get_rect()
+        self.rect.center = (self.main_game.screen_width / 2, 0)
+        self.speed = 1
+        self.health = 500
+        self.chance_to_drop = 1
+        self.score_value = 5000

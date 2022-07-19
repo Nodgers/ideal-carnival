@@ -167,7 +167,7 @@ class HomingMissileLauncher:
         self.shot_frequency = 2000
         self.shot_power = 1
 
-    def make_projectile(self, spread=0.0):
+    def make_projectile(self, offset_x=0.0, offset_y=0.0):
         global SPRITE_POOL
         if "HomingMissile" not in SPRITE_POOL:
             SPRITE_POOL["HomingMissile"] = []
@@ -179,22 +179,22 @@ class HomingMissileLauncher:
             for p in projectile_pool:
                 # Look for one that's dead so you don't end up using a live one
                 if p.is_dead:
-                    p.reset(spread)
+                    p.reset(offset_x, offset_y)
                     return True
 
         # If there's no
-        new_projectile = HomingMissile(self.main_game, spread)
+        new_projectile = HomingMissile(self.main_game, offset_x, offset_y)
         self.main_game.projectile_group.add(new_projectile)
         self.main_game.all_sprites_group.add(new_projectile)
         projectile_pool.append(new_projectile)
 
     def power_up(self):
         if self.level == 0:
-            self.shot_power = 2
+            self.shot_frequency = 1000
         if self.level == 1:
-            self.shot_power = 3
+            self.shot_frequency = 900
         if self.level == 2:
-            self.shot_power = 4
+            self.shot_frequency = 800
         if self.level == 3:
             self.shot_frequency = 700
         if self.level == 4:
@@ -213,29 +213,7 @@ class HomingMissileLauncher:
         if (pygame.time.get_ticks() - self.fired_time) < self.shot_frequency:
             return
 
-        self.make_projectile(0)
+        self.make_projectile(-20)
+        self.make_projectile(20)
 
-        """
-        # Fire a single bullet
-        self.make_projectile(-0.2)
-        self.make_projectile(0.2)
-
-        # Upgrade 1: Add two extra bullets
-        if self.shot_power > 1:
-            self.make_projectile(-0.6)
-            self.make_projectile(0.6)
-
-        # Upgrade 2: Add more two bullets
-        if self.shot_power > 2:
-            self.make_projectile(-1.0)
-            self.make_projectile(1.0)
-
-        if self.shot_power > 3:
-            self.make_projectile(-0.4)
-            self.make_projectile(0.4)
-
-        if self.shot_power > 4:
-            self.make_projectile(-0.8)
-            self.make_projectile(0.8)
-        """
         self.fired_time = pygame.time.get_ticks()

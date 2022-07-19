@@ -3,6 +3,7 @@ import random
 
 import pygame
 
+import projectiles
 from weapons import SpreadShot
 
 ORB_POOL = {"Orbs": []}
@@ -34,8 +35,6 @@ class PowerUp(pygame.sprite.Sprite):
         if self.rect.top > self.main_game.screen_height:
             # If the powerup reaches the bottom without getting killed, despawn it
             self.die()
-
-
 
 
 class Orb(pygame.sprite.Sprite):
@@ -99,9 +98,10 @@ class Orb(pygame.sprite.Sprite):
                 self.die()
 
 
+
 # TODO: Turn this into a generic class for dropping text onto the screen
 class ScoreDrop:
-    def __init__(self, parent):
+    def __init__(self, parent, value_override=False):
         self.font_render = None
         self.parent = parent
         self.position = list(self.parent.rect.center)
@@ -109,12 +109,18 @@ class ScoreDrop:
         self.age = 0
         self.lifespan = 1000
 
+        if value_override:
+            self.score_value = value_override
+        else:
+            self.score_value = self.parent.score_value
+
         font_size = 12
-        if self.parent.score_value >= 10:
+
+        if self.score_value >= 10:
             font_size = 18
-        if self.parent.score_value >= 50:
+        if self.score_value >= 50:
             font_size = 24
-        if self.parent.score_value >= 100:
+        if self.score_value >= 100:
             font_size = 36
 
         self.font = pygame.font.SysFont("Impact", font_size)
@@ -124,7 +130,7 @@ class ScoreDrop:
         self.age = pygame.time.get_ticks() - self.creation_time
 
     def render(self):
-        self.font_render = self.font.render(f"+{self.parent.score_value}", True, (255, 255, 255))
+        self.font_render = self.font.render(f"+{self.score_value}", True, (255, 255, 255))
         if self.age > 0:
             alpha = (1 - (self.age / self.lifespan)) * 255
             self.font_render.set_alpha(alpha)
@@ -169,14 +175,17 @@ class Enemy(pygame.sprite.Sprite):
 
                 # Reduce enemy health
                 self.health -= 1
+                ScoreDrop(self, value_override=100)
+
                 if self.health < 1:
                     self.die()
 
                 # Knock a strength point off of the projectile. If that brings it below 0 then it dies
                 # Otherwise the projectile will live on and pass through everything
-                colliding_projectile.strength -= 1
-                if colliding_projectile.strength < 1:
-                    colliding_projectile.die()
+                if not type(colliding_projectile) is projectiles.TrailDrop:
+                    colliding_projectile.strength -= 1
+                    if colliding_projectile.strength < 1:
+                        colliding_projectile.die()
         else:
             self.getting_hit_by = []
 
@@ -269,6 +278,7 @@ class Player(pygame.sprite.Sprite):
                 self.take_damage(1)
                 if self.health < 1:
                     self.die()
+                    return
                 else:
                     check_enemy_collision.kill()
         else:
