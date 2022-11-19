@@ -164,7 +164,7 @@ class HomingMissileLauncher:
         self.fired_time = 0
         self.level = 0
         self.main_game = main_game
-        self.shot_frequency = 2000
+        self.shot_frequency = 5000
         self.shot_power = 1
 
     def make_projectile(self, offset_x=0.0, offset_y=0.0):
@@ -190,21 +190,21 @@ class HomingMissileLauncher:
 
     def power_up(self):
         if self.level == 0:
-            self.shot_frequency = 1000
+            self.shot_frequency = 5000
         if self.level == 1:
-            self.shot_frequency = 900
+            self.shot_frequency = 4500
         if self.level == 2:
-            self.shot_frequency = 800
+            self.shot_frequency = 4000
         if self.level == 3:
-            self.shot_frequency = 700
+            self.shot_frequency = 3500
         if self.level == 4:
-            self.shot_frequency = 600
+            self.shot_frequency = 3000
         if self.level == 5:
-            self.shot_frequency = 500
+            self.shot_frequency = 2000
         if self.level == 6:
-            self.shot_frequency = 400
+            self.shot_frequency = 1500
         if self.level == 7:
-            self.shot_frequency = 300
+            self.shot_frequency = 1000
 
         self.level += 1
         print(f"Power Up! Level {self.level}")

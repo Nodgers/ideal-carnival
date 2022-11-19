@@ -89,7 +89,7 @@ class SpreadLaser(pygame.sprite.Sprite):
 class TrailDrop(pygame.sprite.Sprite):
     def __init__(self, main_game, parent):
         super().__init__()
-        self.image = pygame.image.load("images/items/Trail.png")
+        self.image = pygame.image.load("images/weapons/Trail.png")
         self.rect = self.image.get_rect()
         self.rect.center = (parent.rect.center[0], parent.rect.center[1])
         self.life_span = 300
@@ -149,7 +149,7 @@ class HomingMissile(pygame.sprite.Sprite):
         self.dropped_trail = pygame.time.get_ticks()
 
     def reset(self, offset_x=0, offset_y=0):
-        self.image = pygame.image.load("images/weapons/Missile.png")
+        #self.image = pygame.image.load("images/weapons/Missile.png")
         self.offset_x = offset_x
         self.offset_y = offset_y
         self.launched_time = pygame.time.get_ticks()
@@ -161,6 +161,8 @@ class HomingMissile(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = self.main_game.player1.rect.center
         self.rect.move_ip(self.offset_x, self.offset_y)
+        self.strength = 1
+
 
     def update(self):
         current_time = pygame.time.get_ticks()

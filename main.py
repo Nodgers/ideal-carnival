@@ -1,4 +1,3 @@
-import sys
 import time
 
 import pygame.event
@@ -17,65 +16,12 @@ BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 
 
-class Background:
-    def __init__(self, main_game):
-        self.bg_image = pygame.image.load('images/backgrounds/Background.png')
-        self.rect_bg_img = self.bg_image.get_rect()
-        self.main_game = main_game
-
-        # Position an image, Y2 on top of Y1
-        self.bg_y1 = 0
-        self.bg_x1 = 0
-
-        self.bg_y2 = -self.rect_bg_img.height
-        self.bg_x2 = 0
-
-        self.moving_up_speed = 1
-
-    def update(self):
-        # Scroll the images both down
-        self.bg_y1 += self.moving_up_speed
-        self.bg_y2 += self.moving_up_speed
-
-        # Once the bottom image is fully off-screen, put it back on top
-        if self.bg_y1 >= self.rect_bg_img.height:
-            self.bg_y1 = -self.rect_bg_img.height
-        if self.bg_y2 >= self.rect_bg_img.height:
-            self.bg_y2 = -self.rect_bg_img.height
-
-    def render(self):
-        self.main_game.display_surface.blit(self.bg_image, (self.bg_x1, self.bg_y1))
-        self.main_game.display_surface.blit(self.bg_image, (self.bg_x2, self.bg_y2))
-
-
-class TitleScreen:
-    def __init__(self, main_game):
-        self.main_game = main_game
-        self.bg_image = pygame.image.load('images/backgrounds/TitleScreen.png')
-
-    def update(self):
-        return
-
-    def render(self):
-        self.main_game.display_surface.blit(self.bg_image, (0, 0))
-
-
-class YouDied:
-    def __init__(self, main_game):
-        self.main_game = main_game
-        self.bg_image = pygame.image.load('images/backgrounds/YouDied.png')
-
-    def update(self):
-        return
-
-    def render(self):
-        self.main_game.display_surface.blit(self.bg_image, (0, 0))
-
-
 class MainGame:
     def __init__(self):
         pygame.init()
 
+        self.view_pos_x = 0
+        self.view_pos_y = 0
         self.you_died = None
         self.quit_main_game = None
         self.title_screen = None
@@ -101,12 +47,13 @@ class MainGame:
         self.screen_width = None
         self.spawn_enemy = None
         self.spawn_power_up = None
-
         self.enemy_spawn_frequency = 1000
         self.next_stage_frequency = 30000  # 30 seconds
         self.score = 0
         self.orbs = 0
         self.stage = 0
+        self.x_drift = 0.4
+        self.y_drift = 0
 
         self.setup_display()
         self.create_groups()
@@ -118,12 +65,12 @@ class MainGame:
         self.framePerSec = pygame.time.Clock()
 
         # Other Variables for use in the program
-        self.screen_width = 400
-        self.screen_height = 600
+        self.screen_width = 500
+        self.screen_height = 700
 
         # Create a white screen
         self.display_surface = pygame.display.set_mode((self.screen_width, self.screen_height))
-        self.display_surface.fill(WHITE)
+        self.display_surface.fill(BLACK)
 
         # Name the window
         pygame.display.set_caption("Ideal Carnival")
@@ -205,7 +152,6 @@ class MainGame:
         while True:
             # Cycles through all events occurring
             for event in pygame.event.get():
-
                 if event.type == self.spawn_enemy:  # TODO: Replace with match case when Python 3.10 lands
                     # If you've spawned every enemy in the wave, move onto the next
                     current_wave_length = len(self.current_wave.enemies) - 1
@@ -223,6 +169,9 @@ class MainGame:
             if self.quit_main_game:
                 break
 
+            self.view_pos_x = (self.player1.rect.x - (self.screen_width / 2)) * self.x_drift
+            self.view_pos_y = (self.player1.rect.y - (self.screen_height / 2)) * self.y_drift
+
             # Draw the background
             self.background.update()
             self.background.render()
@@ -237,9 +186,20 @@ class MainGame:
 
             # Moves and Re-draws all Sprites
             for entity in self.all_sprites_group:
-                self.display_surface.blit(entity.image, entity.rect)
                 entity.move()
                 entity.update()
+
+                final_pos = pygame.rect.Rect(0, 1, 2, 3)
+                final_pos.x = entity.rect.x
+                final_pos.y = entity.rect.y
+
+                final_pos.x -= self.view_pos_x
+                final_pos.y -= self.view_pos_y
+
+                #if entity is self.player1 or entity in self.projectile_group:
+                #    self.display_surface.blit(entity.image, entity.rect)
+                #else:
+                self.display_surface.blit(entity.image, final_pos)
 
                 # If the game is quitting then stop doing stuff
                 if self.quit_main_game:
@@ -258,7 +218,15 @@ class MainGame:
                     dead_score_drops.append(score_drop)
                     continue
 
-                score_drop.render()
+                #score_drop.render()
+                final_pos = pygame.rect.Rect(0, 1, 2, 3)
+                final_pos.x = score_drop.parent.rect.x
+                final_pos.y = score_drop.parent.rect.y
+
+                final_pos.x -= self.view_pos_x
+                final_pos.y -= self.view_pos_y
+
+                self.display_surface.blit(score_drop.font_render, final_pos)
 
             # Clean up any old score drops, so they don't keep rendering
             for i in reversed(dead_score_drops):
@@ -285,6 +253,62 @@ class MainGame:
                 break
             pygame.display.update()
             self.framePerSec.tick(self.fps)
+
+
+class Background:
+    def __init__(self, main_game):
+        self.bg_image = pygame.image.load('images/backgrounds/Background.png')
+        self.rect_bg_img = self.bg_image.get_rect()
+        self.main_game = main_game
+
+        # Position an image, Y2 on top of Y1
+        self.bg_y1 = 0
+        self.bg_x1 = self.main_game.view_pos_x
+
+        self.bg_y2 = -self.rect_bg_img.height
+        self.bg_x2 = self.main_game.view_pos_x
+
+        self.moving_up_speed = 1
+
+    def update(self):
+        # Scroll the images both down
+        self.bg_y1 += self.moving_up_speed
+        self.bg_y2 += self.moving_up_speed
+
+        # Once the bottom image is fully off-screen, put it back on top
+        if self.bg_y1 >= self.rect_bg_img.height:
+            self.bg_y1 = -self.rect_bg_img.height
+        if self.bg_y2 >= self.rect_bg_img.height:
+            self.bg_y2 = -self.rect_bg_img.height
+
+    def render(self):
+        self.main_game.display_surface.blit(self.bg_image, (self.bg_x1, self.bg_y1))
+        self.main_game.display_surface.blit(self.bg_image, (self.bg_x2, self.bg_y2))
+
+
+class TitleScreen:
+    def __init__(self, main_game):
+        self.main_game = main_game
+        self.bg_image = pygame.image.load('images/backgrounds/TitleScreen.png')
+
+    def update(self):
+        return
+
+    def render(self):
+        self.main_game.display_surface.blit(self.bg_image, (0, 0))
+
+
+class YouDied:
+    def __init__(self, main_game):
+        self.main_game = main_game
+        self.bg_image = pygame.image.load('images/backgrounds/YouDied.png')
+
+    def update(self):
+        return
+
+    def render(self):
+        self.main_game.display_surface.blit(self.bg_image, (0, 0))
+
 
 
 if __name__ == "__main__":

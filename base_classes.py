@@ -128,13 +128,14 @@ class ScoreDrop:
     def update(self):
         self.position[1] += 3
         self.age = pygame.time.get_ticks() - self.creation_time
-
-    def render(self):
         self.font_render = self.font.render(f"+{self.score_value}", True, (255, 255, 255))
         if self.age > 0:
             alpha = (1 - (self.age / self.lifespan)) * 255
             self.font_render.set_alpha(alpha)
-        self.parent.main_game.display_surface.blit(self.font_render, self.position)
+
+    def render(self):
+        pass
+        #self.parent.main_game.display_surface.blit(self.font_render, self.position)
 
 
 class Enemy(pygame.sprite.Sprite):
@@ -175,17 +176,17 @@ class Enemy(pygame.sprite.Sprite):
 
                 # Reduce enemy health
                 self.health -= 1
-                ScoreDrop(self, value_override=100)
 
                 if self.health < 1:
+                    ScoreDrop(self, value_override=100)
                     self.die()
 
                 # Knock a strength point off of the projectile. If that brings it below 0 then it dies
                 # Otherwise the projectile will live on and pass through everything
-                if not type(colliding_projectile) is projectiles.TrailDrop:
-                    colliding_projectile.strength -= 1
-                    if colliding_projectile.strength < 1:
-                        colliding_projectile.die()
+                #if not type(colliding_projectile) is projectiles.TrailDrop:
+                #    colliding_projectile.strength -= 1
+                #    if colliding_projectile.strength < 1:
+                colliding_projectile.die()
         else:
             self.getting_hit_by = []
 
@@ -247,7 +248,7 @@ class Player(pygame.sprite.Sprite):
         self.getting_hit = False
         self.image = pygame.image.load("images/players/Player.png")
         self.rect = self.image.get_rect()
-        self.rect.center = (self.main_game.screen_width * 0.4, self.main_game.screen_height * 0.8)
+        self.rect.center = (self.main_game.screen_width/2, self.main_game.screen_height * 0.8)
         self.health = 3
         self.level = 0
         self.shot_power = 1
@@ -258,6 +259,8 @@ class Player(pygame.sprite.Sprite):
         self.fired_time = 0
         self.attraction_distance = 150
         self.weapons = []
+        self.movement_speed_x = 12
+        self.movement_speed_y = 6
 
     def add_weapon(self, weapon):
         self.weapons.append(weapon)
@@ -301,15 +304,15 @@ class Player(pygame.sprite.Sprite):
 
     def move(self):
         pressed_keys = pygame.key.get_pressed()
-        if self.rect.left > 0:
-            if pressed_keys[pygame.K_LEFT]:
-                self.rect.move_ip(-5, 0)
-        if self.rect.right < self.main_game.screen_width:
-            if pressed_keys[pygame.K_RIGHT]:
-                self.rect.move_ip(5, 0)
-        if self.rect.top > 0:
-            if pressed_keys[pygame.K_UP]:
-                self.rect.move_ip(0, -5)
-        if self.rect.bottom < self.main_game.screen_height:
-            if pressed_keys[pygame.K_DOWN]:
-                self.rect.move_ip(0, 5)
+        if self.rect.left > self.main_game.view_pos_x:
+            if pressed_keys[pygame.K_LEFT] or pressed_keys[pygame.K_a]:
+                self.rect.move_ip(-self.movement_speed_x / (1 + self.main_game.x_drift), 0)
+        if self.rect.right < self.main_game.screen_width + self.main_game.view_pos_x:
+            if pressed_keys[pygame.K_RIGHT] or pressed_keys[pygame.K_d]:
+                self.rect.move_ip(self.movement_speed_x / (1 + self.main_game.x_drift), 0)
+        if self.rect.top > 0 + self.main_game.view_pos_y:
+            if pressed_keys[pygame.K_UP] or pressed_keys[pygame.K_w]:
+                self.rect.move_ip(0, -self.movement_speed_y / (1 + self.main_game.y_drift))
+        if self.rect.bottom < self.main_game.screen_height + self.main_game.view_pos_y:
+            if pressed_keys[pygame.K_DOWN] or pressed_keys[pygame.K_s]:
+                self.rect.move_ip(0, self.movement_speed_y / (1 + self.main_game.y_drift))
